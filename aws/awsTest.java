@@ -9,6 +9,7 @@ package aws;
 */
 import java.util.Iterator;
 import java.util.Scanner;
+import java.io.InputStream;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
@@ -34,6 +35,7 @@ import com.amazonaws.services.ec2.model.DescribeImagesRequest;
 import com.amazonaws.services.ec2.model.DescribeImagesResult;
 import com.amazonaws.services.ec2.model.Image;
 import com.amazonaws.services.ec2.model.Filter;
+import com.jcraft.jsch.*;
 
 public class awsTest {
 
@@ -76,6 +78,7 @@ public class awsTest {
 			System.out.println("  3. start instance               4. available regions      ");
 			System.out.println("  5. stop instance                6. create instance        ");
 			System.out.println("  7. reboot instance              8. list images            ");
+			System.out.println("  9. show condor status          10. create several instaces");
 			System.out.println("                                 99. quit                   ");
 			System.out.println("------------------------------------------------------------");
 			
@@ -143,6 +146,13 @@ public class awsTest {
 
 			case 8: 
 				listImages();
+				break;
+
+			case 9:
+				SSHConnect();
+				break;
+
+			case 10:
 				break;
 
 			case 99: 
@@ -343,6 +353,53 @@ public class awsTest {
 					images.getImageId(), images.getName(), images.getOwnerId());
 		}
 		
+	}
+
+	public static void SSHConnect() {
+		String host = "";
+		String user = "ec2-user";
+		String privateKeyPath = "/home/chomingyu/Downloads/cloud-test.pem";
+		String command = "condor_status";
+
+		try {
+			JSch jsch = new JSch();
+			jsch.addIdentity(privateKeyPath);
+			Session session = jsch.getSession(user, host, 22);
+			session.setConfig("StrictHostKeyChecking", "no");
+			session.connect();
+
+			System.out.println("Connection Success!");
+
+			ChannelExec channel = (ChannelExec) session.openChannel("exec");
+			channel.setCommand(command);
+			channel.setErrStream(System.err);
+
+			InputStream in = channel.getInputStream();
+			channel.connect();
+
+			byte[] tmp = new byte[1024];
+			while (true) {
+				while (in.available() > 0) {
+					int i = in.read(tmp, 0, 1024);
+					if (i < 0) {
+						break;
+					}
+					System.out.print(new String(tmp, 0, i));
+				}
+
+				if (channel.isClosed()) {
+					System.out.println("Exit Status: " + channel.getExitStatus());
+					break;
+				}
+				Thread.sleep(1000);
+			}
+
+			channel.disconnect();
+			session.disconnect();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }
 	
