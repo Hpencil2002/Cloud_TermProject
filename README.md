@@ -1,4 +1,4 @@
-# Cloud Computing Term Project (AWS 동적 자원 관리 프로그램)
+# Cloud Computing Term Project<br>- AWS 동적 자원 관리 프로그램 -
 
  <h1>📌 기본 메뉴 </h1>
  1. 인스턴스 목록 확인<br>
