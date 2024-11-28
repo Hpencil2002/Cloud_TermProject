@@ -79,6 +79,7 @@ public class awsTest {
 			System.out.println("  5. stop instance                6. create instance        ");
 			System.out.println("  7. reboot instance              8. list images            ");
 			System.out.println("  9. show condor status          10. create several instaces");
+			System.out.println(" 11. start instance by number                               ");
 			System.out.println("                                 99. quit                   ");
 			System.out.println("------------------------------------------------------------");
 			
@@ -87,7 +88,7 @@ public class awsTest {
 			if(menu.hasNextInt()){
 				number = menu.nextInt();
 				}else {
-					System.out.println("concentration!");
+					System.out.println("1concentration!");
 					break;
 				}
 			
@@ -153,6 +154,10 @@ public class awsTest {
 				break;
 
 			case 10:
+				break;
+
+			case 11:
+				startInstanceByNumber();
 				break;
 
 			case 99: 
@@ -246,6 +251,79 @@ public class awsTest {
 		ec2.startInstances(request);
 
 		System.out.printf("Successfully started instance %s", instance_id);
+	}
+
+	public static void startInstanceByNumber() {
+		System.out.println("Listing instances....");
+		boolean done = false;
+		
+		DescribeInstancesRequest request = new DescribeInstancesRequest();
+		
+		while(!done) {
+			DescribeInstancesResult response = ec2.describeInstances(request);
+
+			for(Reservation reservation : response.getReservations()) {
+				for(Instance instance : reservation.getInstances()) {
+					System.out.printf(
+						"[id] %s, " +
+						"[AMI] %s, " +
+						"[type] %s, " +
+						"[state] %10s, " +
+						"[monitoring state] %s",
+						instance.getInstanceId(),
+						instance.getImageId(),
+						instance.getInstanceType(),
+						instance.getState().getName(),
+						instance.getMonitoring().getState());
+				}
+				System.out.println();
+			}
+
+			request.setNextToken(response.getNextToken());
+
+			if(response.getNextToken() == null) {
+				done = true;
+			}
+		}
+
+		System.out.print("Select the instance number to start...");
+		Scanner instance_number = new Scanner(System.in);
+		int number = -1;
+		int index = 0;
+		boolean started = false;
+		
+		if (instance_number.hasNextInt()) {
+			number = instance_number.nextInt();
+			instance_number.nextLine();
+		}
+		else {
+			System.out.println("There isn't an instance");
+			return;
+		}
+
+		done = false;
+		while (!done) {
+			DescribeInstancesResult instance_result = ec2.describeInstances(request);
+			for(Reservation reservation : instance_result.getReservations()) {
+				for(Instance instance : reservation.getInstances()) {
+					if (index == number) {
+						startInstance(instance.getInstanceId());
+						started = true;
+					}
+				}
+				index += 1;
+			}
+
+			request.setNextToken(instance_result.getNextToken());
+
+			if(instance_result.getNextToken() == null) {
+				done = true;
+			}
+		}
+
+		if (!started) {
+			System.out.println("Failed to start the instance");
+		}
 	}
 	
 	
