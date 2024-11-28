@@ -230,7 +230,7 @@ public class awsTest {
 	{
 		
 		System.out.printf("Starting .... %s\n", instance_id);
-		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
+		// final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
 		DryRunSupportedRequest<StartInstancesRequest> dry_request =
 			() -> {
@@ -253,7 +253,7 @@ public class awsTest {
 		
 		System.out.println("Available regions ....");
 		
-		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
+		// final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
 		DescribeRegionsResult regions_response = ec2.describeRegions();
 
@@ -267,7 +267,7 @@ public class awsTest {
 	}
 	
 	public static void stopInstance(String instance_id) {
-		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
+		// final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
 		DryRunSupportedRequest<StopInstancesRequest> dry_request =
 			() -> {
@@ -292,7 +292,7 @@ public class awsTest {
 	}
 	
 	public static void createInstance(String ami_id) {
-		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
+		// final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 		
 		RunInstancesRequest run_request = new RunInstancesRequest()
 			.withImageId(ami_id)
@@ -314,7 +314,7 @@ public class awsTest {
 		
 		System.out.printf("Rebooting .... %s\n", instance_id);
 		
-		final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
+		// final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
 		try {
 			RebootInstancesRequest request = new RebootInstancesRequest()
