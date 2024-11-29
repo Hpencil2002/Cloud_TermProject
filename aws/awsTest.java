@@ -438,6 +438,15 @@ public class awsTest {
 		String user = "ec2-user";
 		String privateKeyPath = "/home/chomingyu/Downloads/cloud-test.pem";
 		String command = "condor_status";
+		String instanceId = "i-0df88b25ae24fec89";
+
+		DescribeInstancesRequest request = new DescribeInstancesRequest().withInstanceIds(instanceId);
+		DescribeInstancesResult response = ec2.describeInstances(request);
+		for (Reservation reservation : response.getReservations()) {
+			for (Instance instance : reservation.getInstances()) {
+				host = instance.getPublicDnsName();
+			}
+		}
 
 		try {
 			JSch jsch = new JSch();
