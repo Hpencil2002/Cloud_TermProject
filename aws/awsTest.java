@@ -65,6 +65,7 @@ public class awsTest {
 
 		Scanner menu = new Scanner(System.in);
 		Scanner id_string = new Scanner(System.in);
+		Scanner instance_count = new Scanner(System.in);
 		int number = 0;
 		
 		while(true)
@@ -154,6 +155,18 @@ public class awsTest {
 				break;
 
 			case 10:
+				System.out.print("Enter ami id: ");
+				String ami = "";
+				if(id_string.hasNext())
+					ami = id_string.nextLine();
+				
+				if(!ami.trim().isEmpty()) {
+					System.out.print("Enter the number of instance: ");
+					int count = instance_count.nextInt();
+					for (int i = 0; i < count; i++) {
+						createInstance(ami);
+					}
+				}
 				break;
 
 			case 11:
