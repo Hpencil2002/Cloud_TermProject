@@ -66,6 +66,7 @@ public class awsTest {
 		Scanner menu = new Scanner(System.in);
 		Scanner id_string = new Scanner(System.in);
 		Scanner instance_count = new Scanner(System.in);
+		Scanner job_name = new Scanner(System.in);
 		int number = 0;
 		
 		while(true)
@@ -80,7 +81,8 @@ public class awsTest {
 			System.out.println("  5. stop instance                6. create instance        ");
 			System.out.println("  7. reboot instance              8. list images            ");
 			System.out.println("  9. show condor status          10. create several instaces");
-			System.out.println(" 11. start instance by number                               ");
+			System.out.println(" 11. start instance by number    12. send job to instance   ");
+			System.out.println(" 13. check output of the job                                ");
 			System.out.println("                                 99. quit                   ");
 			System.out.println("------------------------------------------------------------");
 			
@@ -171,6 +173,18 @@ public class awsTest {
 
 			case 11:
 				startInstanceByNumber();
+				break;
+
+			case 12:
+				String job = "";
+				if (job_name.hasNext()) {
+					job = job_name.nextLine();
+				}
+				sendJob(job);
+				break;
+
+			case 13:
+				checkOutput();
 				break;
 
 			case 99: 
@@ -451,6 +465,133 @@ public class awsTest {
 		String user = "ec2-user";
 		String privateKeyPath = "/home/chomingyu/Downloads/cloud-test.pem";
 		String command = "condor_status";
+		String instanceId = "i-0df88b25ae24fec89";
+
+		DescribeInstancesRequest request = new DescribeInstancesRequest().withInstanceIds(instanceId);
+		DescribeInstancesResult response = ec2.describeInstances(request);
+		for (Reservation reservation : response.getReservations()) {
+			for (Instance instance : reservation.getInstances()) {
+				host = instance.getPublicDnsName();
+			}
+		}
+
+		try {
+			JSch jsch = new JSch();
+			jsch.addIdentity(privateKeyPath);
+			Session session = jsch.getSession(user, host, 22);
+			session.setConfig("StrictHostKeyChecking", "no");
+			session.connect();
+
+			System.out.println("Connection Success!");
+
+			ChannelExec channel = (ChannelExec) session.openChannel("exec");
+			channel.setCommand(command);
+			channel.setErrStream(System.err);
+
+			InputStream in = channel.getInputStream();
+			channel.connect();
+
+			byte[] tmp = new byte[1024];
+			while (true) {
+				while (in.available() > 0) {
+					int i = in.read(tmp, 0, 1024);
+					if (i < 0) {
+						break;
+					}
+					System.out.print(new String(tmp, 0, i));
+				}
+
+				if (channel.isClosed()) {
+					System.out.println("Exit Status: " + channel.getExitStatus());
+					break;
+				}
+				Thread.sleep(1000);
+			}
+
+			channel.disconnect();
+			session.disconnect();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void sendJob(String job) {
+		String host = "";
+		String user = "ec2-user";
+		String privateKeyPath = "/home/chomingyu/Downloads/cloud-test.pem";
+		String instanceId = "i-0df88b25ae24fec89";
+		String localJobPath = "/home/chomingyu/cloud_project/" + job + ".jds";
+		String localScriptPath = "/home/chomingyu/cloud_project/" + job + ".sh";
+		String remoteDirectory = "/home/ec2-user";
+		String command = "condor_submit " + job + ".jds";
+
+		DescribeInstancesRequest request = new DescribeInstancesRequest().withInstanceIds(instanceId);
+		DescribeInstancesResult response = ec2.describeInstances(request);
+		for (Reservation reservation : response.getReservations()) {
+			for (Instance instance : reservation.getInstances()) {
+				host = instance.getPublicDnsName();
+			}
+		}
+
+		try {
+			JSch jsch = new JSch();
+			jsch.addIdentity(privateKeyPath);
+			Session session = jsch.getSession(user, host, 22);
+			session.setConfig("StrictHostKeyChecking", "no");
+			session.connect();
+
+			System.out.println("Connection Success!");
+
+			ChannelSftp sftpChannel = (ChannelSftp) session.openChannel("sftp");
+			sftpChannel.connect();
+			System.out.println("SFTP Channel connected");
+
+			sftpChannel.put(localJobPath, remoteDirectory + "/" + job + ".jds");
+			System.out.println("jds file uploaded");
+
+			sftpChannel.put(localScriptPath, remoteDirectory + "/" + job + ".sh");
+			System.out.println("sh file uploaded");
+
+			sftpChannel.disconnect();
+
+			ChannelExec channel = (ChannelExec) session.openChannel("exec");
+			channel.setCommand("cd " + remoteDirectory + " & chmod +x " + job + ".sh && " + command);
+			channel.setErrStream(System.err);
+
+			InputStream in = channel.getInputStream();
+			channel.connect();
+
+			byte[] tmp = new byte[1024];
+			while (true) {
+				while (in.available() > 0) {
+					int i = in.read(tmp, 0, 1024);
+					if (i < 0) {
+						break;
+					}
+					System.out.print(new String(tmp, 0, i));
+				}
+
+				if (channel.isClosed()) {
+					System.out.println("Exit Status: " + channel.getExitStatus());
+					break;
+				}
+				Thread.sleep(1000);
+			}
+
+			channel.disconnect();
+			session.disconnect();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void checkOutput() {
+		String host = "";
+		String user = "ec2-user";
+		String privateKeyPath = "/home/chomingyu/Downloads/cloud-test.pem";
+		String command = "cat /home/ec2-user/out.txt";
 		String instanceId = "i-0df88b25ae24fec89";
 
 		DescribeInstancesRequest request = new DescribeInstancesRequest().withInstanceIds(instanceId);
