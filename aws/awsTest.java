@@ -176,6 +176,7 @@ public class awsTest {
 				break;
 
 			case 12:
+				System.out.print("Enter job name: ");
 				String job = "";
 				if (job_name.hasNext()) {
 					job = job_name.nextLine();
@@ -410,7 +411,7 @@ public class awsTest {
 		String reservation_id = run_response.getReservation().getInstances().get(0).getInstanceId();
 
 		System.out.printf(
-			"Successfully started EC2 instance %s based on AMI %s",
+			"Successfully started EC2 instance %s based on AMI %s\n",
 			reservation_id, ami_id);
 	
 	}
@@ -556,7 +557,7 @@ public class awsTest {
 			sftpChannel.disconnect();
 
 			ChannelExec channel = (ChannelExec) session.openChannel("exec");
-			channel.setCommand("cd " + remoteDirectory + " & chmod +x " + job + ".sh && " + command);
+			channel.setCommand("cd " + remoteDirectory + " && chmod +x " + job + ".sh && " + command);
 			channel.setErrStream(System.err);
 
 			InputStream in = channel.getInputStream();
