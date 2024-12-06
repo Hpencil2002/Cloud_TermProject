@@ -81,8 +81,8 @@ public class awsTest {
 			System.out.println("  5. stop instance                6. create instance        ");
 			System.out.println("  7. reboot instance              8. list images            ");
 			System.out.println("  9. show condor status          10. create several instaces");
-			System.out.println(" 11. start instance by number    12. send job to instance   ");
-			System.out.println(" 13. check output of the job                                ");
+			System.out.println(" 11. start instance by number    12. stop instance by number");
+			System.out.println(" 13. send job to instance        14. check output of the job");
 			System.out.println("                                 99. quit                   ");
 			System.out.println("------------------------------------------------------------");
 			
@@ -91,7 +91,7 @@ public class awsTest {
 			if(menu.hasNextInt()){
 				number = menu.nextInt();
 				}else {
-					System.out.println("1concentration!");
+					System.out.println("concentration!1");
 					break;
 				}
 			
@@ -153,7 +153,7 @@ public class awsTest {
 				break;
 
 			case 9:
-				SSHConnect();
+				showCondorStatus();
 				break;
 
 			case 10:
@@ -176,6 +176,10 @@ public class awsTest {
 				break;
 
 			case 12:
+				stopInstanceByNumber();
+				break;
+
+			case 13:
 				System.out.print("Enter job name: ");
 				String job = "";
 				if (job_name.hasNext()) {
@@ -184,7 +188,7 @@ public class awsTest {
 				sendJob(job);
 				break;
 
-			case 13:
+			case 14:
 				checkOutput();
 				break;
 
@@ -193,7 +197,7 @@ public class awsTest {
 				menu.close();
 				id_string.close();
 				return;
-			default: System.out.println("concentration!");
+			default: System.out.println("concentration!2");
 			}
 
 		}
@@ -263,7 +267,6 @@ public class awsTest {
 	{
 		
 		System.out.printf("Starting .... %s\n", instance_id);
-		// final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
 		DryRunSupportedRequest<StartInstancesRequest> dry_request =
 			() -> {
@@ -314,7 +317,7 @@ public class awsTest {
 			}
 		}
 
-		System.out.print("Select the instance number to start...");
+		System.out.print("Select the instance number to start: ");
 		Scanner instance_number = new Scanner(System.in);
 		int number = -1;
 		int index = 0;
@@ -358,8 +361,6 @@ public class awsTest {
 	public static void availableRegions() {
 		
 		System.out.println("Available regions ....");
-		
-		// final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
 		DescribeRegionsResult regions_response = ec2.describeRegions();
 
@@ -373,7 +374,6 @@ public class awsTest {
 	}
 	
 	public static void stopInstance(String instance_id) {
-		// final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
 		DryRunSupportedRequest<StopInstancesRequest> dry_request =
 			() -> {
@@ -396,9 +396,81 @@ public class awsTest {
 		}
 
 	}
+
+	public static void stopInstanceByNumber() {
+		System.out.println("Listing instances....");
+		boolean done = false;
+		
+		DescribeInstancesRequest request = new DescribeInstancesRequest();
+		
+		while(!done) {
+			DescribeInstancesResult response = ec2.describeInstances(request);
+
+			for(Reservation reservation : response.getReservations()) {
+				for(Instance instance : reservation.getInstances()) {
+					System.out.printf(
+						"[id] %s, " +
+						"[AMI] %s, " +
+						"[type] %s, " +
+						"[state] %10s, " +
+						"[monitoring state] %s",
+						instance.getInstanceId(),
+						instance.getImageId(),
+						instance.getInstanceType(),
+						instance.getState().getName(),
+						instance.getMonitoring().getState());
+				}
+				System.out.println();
+			}
+
+			request.setNextToken(response.getNextToken());
+
+			if(response.getNextToken() == null) {
+				done = true;
+			}
+		}
+
+		System.out.print("Select the instance number to stop: ");
+		Scanner instance_number = new Scanner(System.in);
+		int number = -1;
+		int index = 0;
+		boolean stoped = false;
+		
+		if (instance_number.hasNextInt()) {
+			number = instance_number.nextInt();
+			instance_number.nextLine();
+		}
+		else {
+			System.out.println("There isn't an instance");
+			return;
+		}
+
+		done = false;
+		while (!done) {
+			DescribeInstancesResult instance_result = ec2.describeInstances(request);
+			for(Reservation reservation : instance_result.getReservations()) {
+				for(Instance instance : reservation.getInstances()) {
+					if (index == number) {
+						stopInstance(instance.getInstanceId());
+						stoped = true;
+					}
+				}
+				index += 1;
+			}
+
+			request.setNextToken(instance_result.getNextToken());
+
+			if(instance_result.getNextToken() == null) {
+				done = true;
+			}
+		}
+
+		if (!stoped) {
+			System.out.println("Failed to stop the instance");
+		}
+	}
 	
 	public static void createInstance(String ami_id) {
-		// final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 		
 		RunInstancesRequest run_request = new RunInstancesRequest()
 			.withImageId(ami_id)
@@ -419,8 +491,6 @@ public class awsTest {
 	public static void rebootInstance(String instance_id) {
 		
 		System.out.printf("Rebooting .... %s\n", instance_id);
-		
-		// final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 
 		try {
 			RebootInstancesRequest request = new RebootInstancesRequest()
@@ -442,15 +512,11 @@ public class awsTest {
 	public static void listImages() {
 		System.out.println("Listing images....");
 		
-		// final AmazonEC2 ec2 = AmazonEC2ClientBuilder.defaultClient();
 		
 		DescribeImagesRequest request = new DescribeImagesRequest();
 		ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
 		
-		// request.getFilters().add(new Filter().withName("name").withValues("htcondor-slave-image"));
-		// request.getFilters().add(new Filter().withName("name").withValues("aws-htcondor-worker"));
 		request.getFilters().add(new Filter("owner-id").withValues("537124939003"));
-		// request.setRequestCredentialsProvider(credentialsProvider);
 		
 		DescribeImagesResult results = ec2.describeImages(request);
 		
@@ -461,7 +527,7 @@ public class awsTest {
 		
 	}
 
-	public static void SSHConnect() {
+	public static void showCondorStatus() {
 		String host = "";
 		String user = "ec2-user";
 		String privateKeyPath = "/home/chomingyu/Downloads/cloud-test.pem";
