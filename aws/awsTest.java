@@ -67,6 +67,7 @@ public class awsTest {
 		Scanner id_string = new Scanner(System.in);
 		Scanner instance_count = new Scanner(System.in);
 		Scanner job_name = new Scanner(System.in);
+		Scanner output_name = new Scanner(System.in);
 		int number = 0;
 		
 		while(true)
@@ -180,7 +181,7 @@ public class awsTest {
 				break;
 
 			case 13:
-				System.out.print("Enter job name: ");
+				System.out.print("Enter job number: ");
 				String job = "";
 				if (job_name.hasNext()) {
 					job = job_name.nextLine();
@@ -189,7 +190,12 @@ public class awsTest {
 				break;
 
 			case 14:
-				checkOutput();
+				System.out.print("Enter output number: ");
+				String output = "";
+				if (output_name.hasNext()) {
+					output = output_name.nextLine();
+				}
+				checkOutput(output);
 				break;
 
 			case 99: 
@@ -583,15 +589,15 @@ public class awsTest {
 		}
 	}
 
-	public static void sendJob(String job) {
+	public static void sendJob(String num) {
 		String host = "";
 		String user = "ec2-user";
 		String privateKeyPath = "/home/chomingyu/Downloads/cloud-test.pem";
 		String instanceId = "i-0df88b25ae24fec89";
-		String localJobPath = "/home/chomingyu/cloud_project/" + job + ".jds";
-		String localScriptPath = "/home/chomingyu/cloud_project/" + job + ".sh";
+		String localJobPath = "/home/chomingyu/cloud_project/job" + num + ".jds";
+		String localScriptPath = "/home/chomingyu/cloud_project/job" + num + ".sh";
 		String remoteDirectory = "/home/ec2-user";
-		String command = "condor_submit " + job + ".jds";
+		String command = "condor_submit job" + num + ".jds";
 
 		DescribeInstancesRequest request = new DescribeInstancesRequest().withInstanceIds(instanceId);
 		DescribeInstancesResult response = ec2.describeInstances(request);
@@ -614,16 +620,16 @@ public class awsTest {
 			sftpChannel.connect();
 			System.out.println("SFTP Channel connected");
 
-			sftpChannel.put(localJobPath, remoteDirectory + "/" + job + ".jds");
+			sftpChannel.put(localJobPath, remoteDirectory + "/job" + num + ".jds");
 			System.out.println("jds file uploaded");
 
-			sftpChannel.put(localScriptPath, remoteDirectory + "/" + job + ".sh");
+			sftpChannel.put(localScriptPath, remoteDirectory + "/job" + num + ".sh");
 			System.out.println("sh file uploaded");
 
 			sftpChannel.disconnect();
 
 			ChannelExec channel = (ChannelExec) session.openChannel("exec");
-			channel.setCommand("cd " + remoteDirectory + " && chmod +x " + job + ".sh && " + command);
+			channel.setCommand("cd " + remoteDirectory + " && chmod +x job" + num + ".sh && " + command);
 			channel.setErrStream(System.err);
 
 			InputStream in = channel.getInputStream();
@@ -654,11 +660,11 @@ public class awsTest {
 		}
 	}
 
-	public static void checkOutput() {
+	public static void checkOutput(String num) {
 		String host = "";
 		String user = "ec2-user";
 		String privateKeyPath = "/home/chomingyu/Downloads/cloud-test.pem";
-		String command = "cat /home/ec2-user/out.txt";
+		String command = "cat /home/ec2-user/out" + num + ".txt";
 		String instanceId = "i-0df88b25ae24fec89";
 
 		DescribeInstancesRequest request = new DescribeInstancesRequest().withInstanceIds(instanceId);
